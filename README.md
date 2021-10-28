@@ -1,4 +1,4 @@
-# Squaky jump
+# Squeaky jump
  Simple game similar to popular mobile game "Doodle Jump" <br>
  Made with PyGame
  
