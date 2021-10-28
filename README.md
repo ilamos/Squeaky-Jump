@@ -1,5 +1,6 @@
 # Squeaky jump
  Simple game similar to popular mobile game "Doodle Jump" <br>
+ Assets drawn by me <br>
  Made with PyGame
  
  ## How to
