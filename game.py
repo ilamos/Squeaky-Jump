@@ -7,6 +7,7 @@ def clamp(val, val_min, val_max):
     return min(max(val_min, val), val_max)
 
 class game_main():
+    # Game data class, stores game data
     class game_data():
         def __init__(self):
             print("Initializing gamedata...")
@@ -29,12 +30,14 @@ class game_main():
         def get_tickcount(self):
             return self.tickcount
 
+    # Game asset class, stores all game assets used
     class game_assets():
         def __init__(self):
             print("Initializing game assets...")
             self.duck_main = pygame.image.load("assets/duck_main.png")
             self.platform = pygame.image.load("assets/platform.png")
 
+    # Main player character class, stores all player data
     class player_character():
         def __init__(self, image : pygame.Surface):
             print("Initializing character...")
@@ -44,16 +47,20 @@ class game_main():
             self.velocity = [0, -5]
             self.yoffset = 0
 
+        # Applyig current player velocity to position
         def doVelocity(self):
             self.rect = self.rect.move(self.velocity[0], 0)
             self.yoffset += self.velocity[1]
 
+        # Clamping velocity
         def clampVelocity(self):
             self.velocity = [clamp(self.velocity[0], -3, 3), clamp(self.velocity[1], -5, 50)]
 
+        # Function to modify velocity from outside class
         def affectVelocity(self, ind : int, amount : int):
             self.velocity[ind] += amount
 
+        # Adding "Gravity" to velocity
         def doGravity(self):
             # Left/Right speed decrease
             if self.velocity[0] > 0:
@@ -65,12 +72,14 @@ class game_main():
             # Downwards gravity
             self.velocity[1] += 0.3
 
+        # Function for when player hits a platform and jumps
         def bounce(self):
             self.velocity[1] = -5
 
             
-
+    # Input manager class, gets called on input events and stores key class
     class input_manager():
+        # Simple input key class used to keep trace of active keys
         class input_key():
             def __init__(self):
                 self.active = False
@@ -89,12 +98,14 @@ class game_main():
                 self.left_arrow.set(down)
             elif event.key == pygame.K_RIGHT:
                 self.right_arrow.set(down)
-
+    
+    # Basic platform class
     class platform():
         def __init__(self, pos, asset):
             self.pos = [pos[0] - 50, pos[1]]
             self.asset = pygame.transform.scale(asset, [50, 20])
 
+    # Platform generation function
     def generate_platform(self, amount : int, ylevel : int):
         rects = []
         for i in range(amount):
@@ -107,6 +118,7 @@ class game_main():
                 self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform))
             rects.append(test_rect)
 
+    # Main game loop function
     def gameloop(self):
         print("Starting game loop")
         game_tick = pygame.USEREVENT + 1
@@ -176,18 +188,20 @@ class game_main():
         print("Game ended")
         sys.exit()
                     
-
+    # Game window initialization
     def init_gamewindow(self):
         print("Initializing game window...")
         self.game_window = pygame.display.set_mode(self.gamedata.window_size)
         pygame.display.set_caption("Squeaky Jump")
         pygame.display.set_icon(self.gameassets.duck_main)
 
+    # Initialize game characters and starter platform
     def init_characters(self):
         print("Initializing game characters...")
         self.main_character = self.player_character(self.gameassets.duck_main)
         self.gamedata.add_platform(self.platform([170, 270], self.gameassets.platform))
-
+    
+    # Main game initialization
     def __init__(self):
         print("Initializing game...")
         pygame.init()
