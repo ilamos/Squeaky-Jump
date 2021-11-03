@@ -2,9 +2,7 @@ import pygame
 import sys
 import random
 import math
-
-def clamp(val, val_min, val_max):
-    return min(max(val_min, val), val_max)
+import json
 
 class game_main():
     # Game data class, stores game data
@@ -13,11 +11,40 @@ class game_main():
             print("Initializing gamedata...")
             self.window_size = [300, 400]
             self.tickcount = 0
+            self.data_file = "data.json"
             self.last_generated = 300
             self.score = 0
+            self.highscore = 0
             self.gamestarted = False
+            self.file_data = {}
             self.platforms = []
         
+        def load_data(self):
+            print("Loading saved gamedata...")
+            file = open(self.data_file, "r")
+            # Loading JSON data into the filedata
+            try:
+                self.file_data = json.loads(file.read())
+            except ValueError:
+                print("[ERROR] Failed to load JSON data while loading saved gamedata")
+                return
+            
+            try:
+                self.highscore = self.file_data["highscore"]
+            except KeyError:
+                print("[WARNING] Failed to load highscore")
+
+        def save_data(self):
+            print("Saving gamedata...")
+            file = open(self.data_file, "w")
+            data = {
+                "highscore": self.highscore,
+            }
+            data_json = json.dumps(data)
+            file.write(data_json)
+            
+            
+
         def tick(self):
             self.tickcount += 1
 
@@ -36,6 +63,7 @@ class game_main():
             print("Initializing game assets...")
             self.duck_main = pygame.image.load("assets/duck_main.png")
             self.platform = pygame.image.load("assets/platform.png")
+            self.platform_d = pygame.image.load("assets/platform_d.png")
 
     # Main player character class, stores all player data
     class player_character():
@@ -53,8 +81,8 @@ class game_main():
             self.yoffset += self.velocity[1]
 
         # Clamping velocity
-        def clampVelocity(self):
-            self.velocity = [clamp(self.velocity[0], -3, 3), clamp(self.velocity[1], -5, 50)]
+        def clampVelocity(self, parent):
+            self.velocity = [parent.clamp(self.velocity[0], -3, 3), parent.clamp(self.velocity[1], -5, 50)]
 
         # Function to modify velocity from outside class
         def affectVelocity(self, ind : int, amount : int):
@@ -79,7 +107,7 @@ class game_main():
             
     # Input manager class, gets called on input events and stores key class
     class input_manager():
-        # Simple input key class used to keep trace of active keys
+        # Simple input key class used to keep track of active keys
         class input_key():
             def __init__(self):
                 self.active = False
@@ -91,7 +119,6 @@ class game_main():
             print("Initializing input manager...")
             self.left_arrow = self.input_key()
             self.right_arrow = self.input_key()
-
         def check_input(self, event : pygame.event, down : bool):
             #print("Checking for input keys")
             if event.key == pygame.K_LEFT:
@@ -101,8 +128,9 @@ class game_main():
     
     # Basic platform class
     class platform():
-        def __init__(self, pos, asset):
+        def __init__(self, pos, asset, destr):
             self.pos = [pos[0] - 50, pos[1]]
+            self.destr = destr
             self.asset = pygame.transform.scale(asset, [50, 20])
 
     # Platform generation function
@@ -115,8 +143,16 @@ class game_main():
                 if cur_rect.colliderect(test_rect):
                     overlap = True
             if not overlap:
-                self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform))
+                destructible = (random.randint(1, 6) == 1)
+                if destructible:
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_d, True))
+                else: 
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform, False))
             rects.append(test_rect)
+
+    # Utility clamping function
+    def clamp(self, val, val_min, val_max):
+        return min(max(val_min, val), val_max)
 
     # Main game loop function
     def gameloop(self):
@@ -125,11 +161,12 @@ class game_main():
         # Game ticking, every 15 ms
         pygame.time.set_timer(game_tick, 15)
         # Main game loop
-        game_running = True
-        while game_running:
+        self.game_running = True
+        while self.game_running:
             for event in pygame.event.get():
+                # Event checks
                 if event.type == pygame.QUIT: 
-                    game_running = False
+                    self.game_running = False
                 elif event.type == game_tick:
                     self.gamedata.tick()
                     # Only run when game is started
@@ -142,7 +179,7 @@ class game_main():
                         self.main_character.doVelocity()
                         if (self.gamedata.get_tickcount() % 2):
                             self.main_character.doGravity()
-                        self.main_character.clampVelocity()
+                        self.main_character.clampVelocity(self)
                     # Screen offset
                     y_offset = self.main_character.yoffset
                     # Platform generation
@@ -159,10 +196,14 @@ class game_main():
                         self.gamedata.score = cur_score
                     # Death check
                     if cur_score + 5 < self.gamedata.score:
-                        game_running = False
+                        self.game_running = False
+                    # Highscore check
+                    if self.gamedata.score > self.gamedata.highscore:
+                        self.gamedata.highscore = self.gamedata.score
                     # Drawing
                     font = pygame.font.SysFont("VerdanaBD", 30)
                     score_text = font.render("SCORE: " + str(self.gamedata.score), 1, (255, 0, 0))
+                    highscore_text = font.render("HIGHSCORE: " + str(self.gamedata.highscore), 1, (255, 0, 0))
                     # Player bounce and platform drawing and platform removal
                     self.game_window.fill([255, 255, 255])
                     for platform in self.gamedata.get_platforms():
@@ -170,6 +211,8 @@ class game_main():
                         test_rect = pygame.Rect(platform.pos[0], platform.pos[1] - y_offset - 25, 50, 10)
                         if test_rect.colliderect(self.main_character.rect) and self.main_character.velocity[1] > 0:
                             self.main_character.bounce()
+                            if platform.destr:
+                                self.gamedata.platforms.remove(platform)
                         if test_rect.y > 500:
                             self.gamedata.platforms.remove(platform)
                     # Player character drawing
@@ -179,6 +222,7 @@ class game_main():
                         # Press space to start text
                         start_text = font.render("PRESS SPACE TO START!", 1, (255, 0, 0))
                         self.game_window.blit(start_text, (self.gamedata.window_size[0] / 2 - start_text.get_rect().width / 2, 300))
+                    self.game_window.blit(highscore_text, (10, 30))
                     self.game_window.blit(score_text, (10, 10))
                     pygame.display.flip()
                 elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
@@ -186,6 +230,7 @@ class game_main():
                     if event.key == pygame.K_SPACE:
                         self.gamedata.gamestarted = True
         print("Game ended")
+        self.gamedata.save_data()
         sys.exit()
                     
     # Game window initialization
@@ -199,7 +244,7 @@ class game_main():
     def init_characters(self):
         print("Initializing game characters...")
         self.main_character = self.player_character(self.gameassets.duck_main)
-        self.gamedata.add_platform(self.platform([170, 270], self.gameassets.platform))
+        self.gamedata.add_platform(self.platform([170, 270], self.gameassets.platform, False))
     
     # Main game initialization
     def __init__(self):
@@ -210,6 +255,7 @@ class game_main():
         self.inputmanager = self.input_manager()
         self.init_gamewindow()
         self.init_characters()
+        self.gamedata.load_data()
         self.gameloop()
 
 
