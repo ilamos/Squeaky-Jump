@@ -206,19 +206,23 @@ class game_main():
                         self.gamedata.highscore = self.gamedata.score
                     # Drawing
                     font = pygame.font.SysFont("VerdanaBD", 30)
-                    score_text = font.render("SCORE: " + str(self.gamedata.score), 1, (255, 0, 0))
-                    highscore_text = font.render("HIGHSCORE: " + str(self.gamedata.highscore), 1, (255, 0, 0))
+                    score_text = font.render("SCORE: " + str(self.gamedata.score), 1, (0, 0, 0))
+                    highscore_text = font.render("HIGHSCORE: " + str(self.gamedata.highscore), 1, (0, 0, 0))
                     # Player bounce and platform drawing and platform removal
-                    self.game_window.fill([255, 255, 255])
                     for platform in self.gamedata.get_platforms():
-                        self.game_window.blit(platform.asset, [platform.pos[0], platform.pos[1] - y_offset])
+                        #self.game_window.blit(platform.asset, [platform.pos[0], platform.pos[1] - y_offset])
                         test_rect = pygame.Rect(platform.pos[0], platform.pos[1] - y_offset - 25, 50, 10)
                         if test_rect.colliderect(self.main_character.rect) and self.main_character.velocity[1] > 0:
                             self.main_character.bounce()
                             if platform.destr:
                                 self.gamedata.platforms.remove(platform)
-                        if test_rect.y > 500:
+                        if test_rect.y > 400:
                             self.gamedata.platforms.remove(platform)
+                    # Clear window
+                    self.game_window.fill([255, 255, 255])
+                    # Platform drawing
+                    for platform in self.gamedata.get_platforms():
+                        self.game_window.blit(platform.asset, [platform.pos[0], platform.pos[1] - y_offset])
                     # Player character drawing
                     self.game_window.blit(pygame.transform.flip(self.main_character.asset, self.main_character.flipped, False), [self.main_character.rect[0] - 25, self.main_character.rect[1]])
                     # Non game UI
@@ -226,8 +230,8 @@ class game_main():
                         # Press space to start text
                         start_text = font.render("PRESS SPACE TO START!", 1, (255, 0, 0))
                         self.game_window.blit(start_text, (self.gamedata.window_size[0] / 2 - start_text.get_rect().width / 2, 300))
-                    self.game_window.blit(highscore_text, (10, 30))
-                    self.game_window.blit(score_text, (10, 10))
+                    self.game_window.blit(highscore_text, (5, 25))
+                    self.game_window.blit(score_text, (5, 5))
                     pygame.display.flip()
                 elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                     self.inputmanager.check_input(event, (event.type == pygame.KEYDOWN))
