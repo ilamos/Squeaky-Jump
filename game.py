@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 import math
+import os
 import json
 
 class game_main():
@@ -21,7 +22,10 @@ class game_main():
         
         def load_data(self):
             print("Loading saved gamedata...")
+            if not os.path.isfile(self.data_file):
+                open(self.data_file, "w")
             file = open(self.data_file, "r")
+            
             # Loading JSON data into the filedata
             try:
                 self.file_data = json.loads(file.read())
