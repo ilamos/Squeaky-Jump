@@ -68,6 +68,7 @@ class game_main():
             self.duck_main = pygame.image.load("assets/duck_main.png")
             self.platform = pygame.image.load("assets/platform.png")
             self.platform_d = pygame.image.load("assets/platform_d.png")
+            self.platform_m = pygame.image.load("assets/platform_m.png")
 
     # Main player character class, stores all player data
     class player_character():
@@ -132,10 +133,19 @@ class game_main():
     
     # Basic platform class
     class platform():
-        def __init__(self, pos, asset, destr):
+        def __init__(self, pos, asset, type):
             self.pos = [pos[0] - 50, pos[1]]
-            self.destr = destr
+            self.type = type
             self.asset = pygame.transform.scale(asset, [50, 20])
+            self.direction = (random.randint(1, 2) == 2)
+
+        def move(self, gamedata):
+            self.pos[0] += (-1 if self.direction else 1)
+            if self.pos[0] < 10:
+                self.direction = False
+            elif self.pos[0] > gamedata.window_size[0] - 30:
+                self.direction = True
+                
 
     # Platform generation function
     def generate_platform(self, amount : int, ylevel : int):
@@ -147,11 +157,13 @@ class game_main():
                 if cur_rect.colliderect(test_rect):
                     overlap = True
             if not overlap:
-                destructible = (random.randint(1, 6) == 1)
-                if destructible:
-                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_d, True))
+                rand_num = (random.randint(1, 10))
+                if rand_num == 1:
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_d, 1))
+                elif rand_num == 2 and self.gamedata.score > 20:
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_m, 2))
                 else: 
-                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform, False))
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform, 0))
             rects.append(test_rect)
 
     # Utility clamping function
@@ -189,7 +201,7 @@ class game_main():
                     # Platform generation
                     if self.gamedata.last_generated - y_offset > 50:
                         cur_gen = self.gamedata.last_generated - 90
-                        if self.gamedata.score > 50:
+                        if self.gamedata.score > 20:
                             self.generate_platform(1, cur_gen)
                         else:
                             self.generate_platform(2, cur_gen)
@@ -214,8 +226,10 @@ class game_main():
                         test_rect = pygame.Rect(platform.pos[0], platform.pos[1] - y_offset - 25, 50, 10)
                         if test_rect.colliderect(self.main_character.rect) and self.main_character.velocity[1] > 0:
                             self.main_character.bounce()
-                            if platform.destr:
+                            if platform.type == 1:
                                 self.gamedata.platforms.remove(platform)
+                        if platform.type == 2:
+                            platform.move(self.gamedata)
                         if test_rect.y > 400:
                             self.gamedata.platforms.remove(platform)
                     # Clear window
