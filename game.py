@@ -69,6 +69,7 @@ class game_main():
             self.platform = pygame.image.load("assets/platform.png")
             self.platform_d = pygame.image.load("assets/platform_d.png")
             self.platform_m = pygame.image.load("assets/platform_m.png")
+            self.platform_j = pygame.image.load("assets/platform_j.png")
 
     # Main player character class, stores all player data
     class player_character():
@@ -87,7 +88,7 @@ class game_main():
 
         # Clamping velocity
         def clampVelocity(self, parent):
-            self.velocity = [parent.clamp(self.velocity[0], -3, 3), parent.clamp(self.velocity[1], -5, 50)]
+            self.velocity = [parent.clamp(self.velocity[0], -3, 3), parent.clamp(self.velocity[1], -20, 50)]
 
         # Function to modify velocity from outside class
         def affectVelocity(self, ind : int, amount : int):
@@ -106,8 +107,8 @@ class game_main():
             self.velocity[1] += 0.3
 
         # Function for when player hits a platform and jumps
-        def bounce(self):
-            self.velocity[1] = -5
+        def bounce(self, amount):
+            self.velocity[1] = -amount
 
             
     # Input manager class, gets called on input events and stores key class
@@ -157,11 +158,13 @@ class game_main():
                 if cur_rect.colliderect(test_rect):
                     overlap = True
             if not overlap:
-                rand_num = (random.randint(1, 10))
+                rand_num = (random.randint(1, 20))
                 if rand_num == 1:
                     self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_d, 1))
                 elif rand_num == 2 and self.gamedata.score > 20:
                     self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_m, 2))
+                elif rand_num == 3:
+                    self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform_j, 3))
                 else: 
                     self.gamedata.add_platform(self.platform([test_rect.x, test_rect.y], self.gameassets.platform, 0))
             rects.append(test_rect)
@@ -199,7 +202,7 @@ class game_main():
                     # Screen offset
                     y_offset = self.main_character.yoffset
                     # Platform generation
-                    if self.gamedata.last_generated - y_offset > 50:
+                    if self.gamedata.last_generated - y_offset > 45:
                         cur_gen = self.gamedata.last_generated - 90
                         if self.gamedata.score > 20:
                             self.generate_platform(1, cur_gen)
@@ -224,10 +227,15 @@ class game_main():
                     for platform in self.gamedata.get_platforms():
                         #self.game_window.blit(platform.asset, [platform.pos[0], platform.pos[1] - y_offset])
                         test_rect = pygame.Rect(platform.pos[0], platform.pos[1] - y_offset - 25, 50, 10)
-                        if test_rect.colliderect(self.main_character.rect) and self.main_character.velocity[1] > 0:
-                            self.main_character.bounce()
+                        if test_rect.colliderect(pygame.Rect(self.main_character.rect.x, self.main_character.rect.y + 20, self.main_character.rect.width, 5)) and self.main_character.velocity[1] > 0:
                             if platform.type == 1:
                                 self.gamedata.platforms.remove(platform)
+                            # print("Bounce on type: " + str(platform.type))
+                            if platform.type == 3:
+                                self.main_character.bounce(10)
+                            else:
+                                self.main_character.bounce(20)
+                                
                         if platform.type == 2:
                             platform.move(self.gamedata)
                         if test_rect.y > 400:
