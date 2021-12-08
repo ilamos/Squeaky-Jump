@@ -232,9 +232,9 @@ class game_main():
                                 self.gamedata.platforms.remove(platform)
                             # print("Bounce on type: " + str(platform.type))
                             if platform.type == 3:
-                                self.main_character.bounce(10)
-                            else:
                                 self.main_character.bounce(20)
+                            else: 
+                                self.main_character.bounce(5)
                                 
                         if platform.type == 2:
                             platform.move(self.gamedata)
